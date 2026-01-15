@@ -1,12 +1,12 @@
 // MassPushModul/components/EditorPanel.tsx
-import React from 'react';
+import React, { useState } from 'react';
 import { CoverConfig, FONT_OPTIONS, FONT_WEIGHT_OPTIONS, PRIMARY_BG_COLORS, CATEGORIES_DATA, getContrastColor, DEFAULT_CONFIG } from '../types';
-import { Settings, Image as ImageIcon, Layout, Type, Palette, Check, RefreshCcw, BoxSelect, User, MoveHorizontal, FileSpreadsheet, ChevronLeft, ChevronRight, Upload } from 'lucide-react';
+// Tambahkan 'Trash2' di import ini
+import { Settings, Image as ImageIcon, Layout, Type, Palette, Check, RefreshCcw, BoxSelect, User, MoveHorizontal, FileSpreadsheet, ChevronLeft, ChevronRight, Upload, Info, HelpCircle, Trash2 } from 'lucide-react';
 
 interface EditorPanelProps {
   config: CoverConfig;
   onChange: (config: CoverConfig) => void;
-  // Props Bulk Mode (Tetap dipertahankan)
   isBulkMode?: boolean;
   onBulkUpload?: (file: File) => void;
   onBulkNavigate?: (direction: 'next' | 'prev') => void;
@@ -36,9 +36,11 @@ const Label = ({ children, badge }: { children: React.ReactNode, badge?: string 
 );
 
 export const EditorPanel: React.FC<EditorPanelProps> = ({ 
-    config, onChange, isBulkMode, onBulkUpload, onBulkNavigate, currentBulkIndex, totalBulkItems, onAssetUpload, assets, onReset 
+    config, onChange, isBulkMode, onBulkUpload, onBulkNavigate, currentBulkIndex, totalBulkItems, onAssetUpload, assets, onRemoveAsset, onReset 
 }) => {
   
+  const [showHelp, setShowHelp] = useState(false);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     onChange({ ...config, [name]: value });
@@ -87,29 +89,97 @@ export const EditorPanel: React.FC<EditorPanelProps> = ({
 
       <div className="p-5 space-y-2">
         
-        {/* --- BULK MODE CONTROLS (JIKA ADA) --- */}
+        {/* --- DATA SOURCE --- */}
         <Section title="Data Source" icon={FileSpreadsheet}>
             <div className="space-y-3">
                 <div className="bg-slate-50 p-3 rounded-lg border border-slate-200">
-                    <Label>Upload Excel</Label>
-                    <input 
-                        type="file" 
-                        accept=".xlsx, .xls" 
-                        onChange={(e) => e.target.files?.[0] && onBulkUpload?.(e.target.files[0])}
-                        className="block w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                    />
+                    <Label>Upload Excel (.xlsx)</Label>
+                    <input type="file" accept=".xlsx, .xls" onChange={(e) => e.target.files?.[0] && onBulkUpload?.(e.target.files[0])} className="block w-full text-xs text-slate-500"/>
+                </div>
+                <div className="mt-2">
+                    <button onClick={() => setShowHelp(!showHelp)} className="flex items-center gap-2 text-[10px] font-bold text-blue-600 hover:text-blue-800 hover:underline transition-all">
+                        <HelpCircle className="w-3 h-3" />
+                        {showHelp ? 'Sembunyikan Info Kolom' : 'Lihat Format Kolom Excel'}
+                    </button>
+                    {showHelp && (
+                        <div className="mt-2 p-3 bg-blue-50 rounded-md border border-blue-100 text-[10px] text-slate-700">
+                            <p className="mb-2 font-semibold">Header Kolom Excel:</p>
+                            <ul className="space-y-1.5 list-disc pl-3">
+                                <li>Title / Judul</li>
+                                <li>Category / Kategori</li>
+                                <li>Speaker / Pembicara</li>
+                                <li>Side Image (Isi nama file: <i>foto.jpg</i>)</li>
+                            </ul>
+                        </div>
+                    )}
                 </div>
                 {isBulkMode && (
-                   <div className="flex items-center justify-between bg-blue-50 p-2 rounded-lg border border-blue-100">
-                      <button onClick={() => onBulkNavigate?.('prev')} className="p-1 hover:bg-white rounded shadow-sm"><ChevronLeft className="w-4 h-4 text-blue-600"/></button>
+                   <div className="flex items-center justify-between bg-blue-50 p-2 rounded-lg border border-blue-100 mt-2">
+                      <button onClick={() => onBulkNavigate?.('prev')} className="p-1 hover:bg-white rounded shadow-sm disabled:opacity-50"><ChevronLeft className="w-4 h-4 text-blue-600"/></button>
                       <span className="text-xs font-bold text-blue-800">Item { (currentBulkIndex || 0) + 1 } / { totalBulkItems }</span>
-                      <button onClick={() => onBulkNavigate?.('next')} className="p-1 hover:bg-white rounded shadow-sm"><ChevronRight className="w-4 h-4 text-blue-600"/></button>
+                      <button onClick={() => onBulkNavigate?.('next')} className="p-1 hover:bg-white rounded shadow-sm disabled:opacity-50"><ChevronRight className="w-4 h-4 text-blue-600"/></button>
                    </div>
                 )}
             </div>
         </Section>
 
-        {/* --- CONTENT --- */}
+        {/* --- ASSETS MANAGER (FITUR BARU) --- */}
+        <Section title="Assets" icon={ImageIcon}>
+             <div className="space-y-4">
+                 <div className="bg-slate-50 p-3 rounded-lg border border-slate-200">
+                    <Label>Upload Assets (Bulk)</Label>
+                    <input type="file" multiple accept="image/*" onChange={onAssetUpload} className="block w-full text-xs text-slate-500 mb-2"/>
+                    <p className="text-[10px] text-slate-400">Upload gambar yang namanya sesuai Excel.</p>
+                 
+                    {/* --- LIST GAMBAR YANG DI-UPLOAD --- */}
+                    {assets && Object.keys(assets).length > 0 && (
+                        <div className="mt-3 pt-3 border-t border-slate-200">
+                            <Label badge={String(Object.keys(assets).length)}>Uploaded Files</Label>
+                            <div className="mt-2 max-h-40 overflow-y-auto custom-scrollbar space-y-1.5 pr-1">
+                                {Object.entries(assets).map(([name, url]) => (
+                                    <div key={name} className="group flex items-center justify-between bg-white p-1.5 rounded border border-slate-200 hover:border-blue-300 transition-all">
+                                        <div className="flex items-center gap-2 overflow-hidden">
+                                            {/* Thumbnail Kecil */}
+                                            <div className="w-6 h-6 shrink-0 bg-slate-100 rounded overflow-hidden border border-slate-100">
+                                                <img src={url} alt={name} className="w-full h-full object-cover" />
+                                            </div>
+                                            <span className="text-[10px] text-slate-600 truncate w-32" title={name}>{name}</span>
+                                        </div>
+                                        {/* Tombol Hapus */}
+                                        <button 
+                                            onClick={() => onRemoveAsset?.(name)}
+                                            className="p-1 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
+                                            title="Hapus gambar ini"
+                                        >
+                                            <Trash2 className="w-3 h-3" />
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                 </div>
+
+                 {/* Manual Uploads */}
+                 <div className="bg-slate-50 p-3 rounded-lg border border-slate-200">
+                    <Label>Logo (Top Right)</Label>
+                    <input type="file" accept="image/*" onChange={handleFileChange('logoUrl')} className="block w-full text-xs text-slate-500 mb-2"/>
+                    {config.logoUrl && (
+                        <div className="space-y-2">
+                            <SliderWithInput label="Size" name="logoWidth" min={50} max={300} value={config.logoWidth} />
+                            <SliderWithInput label="Pos X" name="logoPositionX" min={-100} max={200} value={config.logoPositionX} />
+                            <SliderWithInput label="Pos Y" name="logoPositionY" min={-100} max={200} value={config.logoPositionY} />
+                        </div>
+                    )}
+                 </div>
+                 <div className="bg-slate-50 p-3 rounded-lg border border-slate-200">
+                    <Label>Left Side Image</Label>
+                    <input type="file" accept="image/*" onChange={handleFileChange('bottomImageUrl')} className="block w-full text-xs text-slate-500 mb-2"/>
+                 </div>
+             </div>
+        </Section>
+
+        {/* --- CONTENT & TYPOGRAPHY & COLORS (SAMA SEPERTI SEBELUMNYA) --- */}
         <Section title="Content" icon={Type}>
           <div className="space-y-4">
             <div className="bg-blue-50 p-3 rounded-lg border border-blue-100">
@@ -130,38 +200,21 @@ export const EditorPanel: React.FC<EditorPanelProps> = ({
                   <input type="text" name="speakerName" value={config.speakerName} onChange={handleChange} placeholder="Nama Pembicara..." className="w-full text-sm outline-none"/>
                </div>
             </div>
-
-            {/* --- NEW CATEGORY SELECTOR WITH GROUPS --- */}
             <div>
                <Label>Category</Label>
-               <select 
-                  name="category" 
-                  className="w-full text-sm p-2 border border-slate-200 rounded-md bg-white outline-none"
-                  value={config.category}
-                  onChange={(e) => {
+               <select name="category" className="w-full text-sm p-2 border border-slate-200 rounded-md bg-white outline-none" value={config.category} onChange={(e) => {
                       const selectedName = e.target.value;
                       const selectedData = CATEGORIES_DATA.find(c => c.name === selectedName);
                       if (selectedData) {
-                          onChange({ 
-                              ...config, 
-                              category: selectedData.name, 
-                              categoryBgColor: selectedData.color,        
-                              categoryTextColor: getContrastColor(selectedData.color), 
-                              accentColor: selectedData.color             
-                          });
-                      } else {
-                          onChange({ ...config, category: selectedName });
-                      }
+                          onChange({ ...config, category: selectedData.name, categoryBgColor: selectedData.color, categoryTextColor: getContrastColor(selectedData.color), accentColor: selectedData.color });
+                      } else { onChange({ ...config, category: selectedName }); }
                   }}
                >
                   <option value="" disabled>Pilih Kategori...</option>
-                  {/* GROUPING LOGIC */}
                   {Array.from(new Set(CATEGORIES_DATA.map(c => c.group))).map(groupName => (
                       <optgroup key={groupName} label={groupName} className="font-bold text-slate-600 bg-slate-50">
                           {CATEGORIES_DATA.filter(c => c.group === groupName).map(c => (
-                              <option key={c.name} value={c.name} className="font-normal text-slate-800 bg-white">
-                                  {c.name}
-                              </option>
+                              <option key={c.name} value={c.name} className="font-normal text-slate-800 bg-white">{c.name}</option>
                           ))}
                       </optgroup>
                   ))}
@@ -170,7 +223,6 @@ export const EditorPanel: React.FC<EditorPanelProps> = ({
           </div>
         </Section>
 
-        {/* --- IMAGE SETTINGS (MODERN LAYOUT) --- */}
         {config.layout === 'modern' && (
             <Section title="Split & Position" icon={MoveHorizontal}>
                 <div className="space-y-4">
@@ -194,7 +246,6 @@ export const EditorPanel: React.FC<EditorPanelProps> = ({
             </Section>
         )}
 
-       {/* --- TYPOGRAPHY & COLORS & ASSETS --- */}
         <Section title="Typography" icon={Layout}>
             <div className="space-y-4">
                  <div className="grid grid-cols-2 gap-3">
@@ -211,20 +262,13 @@ export const EditorPanel: React.FC<EditorPanelProps> = ({
                         </select>
                     </div>
                  </div>
-                 
-                 {/* --- POSISI KONTEN UTAMA --- */}
                  <div className="border-t border-slate-100 pt-3 mt-2">
                     <Label badge="Position">Layout Adjustment</Label>
                     <div className="mt-3 space-y-2">
-                        {/* Menggeser SEMUA (Kategori + Judul) */}
                         <SliderWithInput label="Content Block Y" name="contentPositionY" min={-200} max={200} value={config.contentPositionY} />
-                        
-                        {/* Menggeser KATEGORI SAJA (Fitur Baru) */}
                         <SliderWithInput label="Category Only Y" name="categoryPositionY" min={-50} max={100} value={config.categoryPositionY} />
                     </div>
                  </div>
-
-                 {/* --- FONT SIZE --- */}
                  <div className="border-t border-slate-100 pt-3 mt-2">
                     <Label badge="Title">Title Font</Label>
                     <div className="mt-3 space-y-2">
@@ -234,6 +278,7 @@ export const EditorPanel: React.FC<EditorPanelProps> = ({
                  </div>
             </div>
         </Section>
+        
         <Section title="Colors" icon={Palette}>
              <div className="space-y-4">
                  <div>
@@ -245,32 +290,6 @@ export const EditorPanel: React.FC<EditorPanelProps> = ({
                             </button>
                         ))}
                     </div>
-                 </div>
-             </div>
-        </Section>
-        <Section title="Assets" icon={ImageIcon}>
-             <div className="space-y-4">
-                 {/* Asset Manager untuk Bulk Mode */}
-                 <div className="bg-slate-50 p-3 rounded-lg border border-slate-200">
-                    <Label>Upload Assets (Bulk)</Label>
-                    <input type="file" multiple accept="image/*" onChange={onAssetUpload} className="block w-full text-xs text-slate-500 mb-2"/>
-                    <p className="text-[10px] text-slate-400">Upload logo/gambar yang namanya sesuai dengan Excel.</p>
-                 </div>
-
-                 <div className="bg-slate-50 p-3 rounded-lg border border-slate-200">
-                    <Label>Logo (Top Right)</Label>
-                    <input type="file" accept="image/*" onChange={handleFileChange('logoUrl')} className="block w-full text-xs text-slate-500 mb-2"/>
-                    {config.logoUrl && (
-                        <div className="space-y-2">
-                            <SliderWithInput label="Size" name="logoWidth" min={50} max={300} value={config.logoWidth} />
-                            <SliderWithInput label="Pos X" name="logoPositionX" min={-100} max={200} value={config.logoPositionX} />
-                            <SliderWithInput label="Pos Y" name="logoPositionY" min={-100} max={200} value={config.logoPositionY} />
-                        </div>
-                    )}
-                 </div>
-                 <div className="bg-slate-50 p-3 rounded-lg border border-slate-200">
-                    <Label>Left Side Image</Label>
-                    <input type="file" accept="image/*" onChange={handleFileChange('bottomImageUrl')} className="block w-full text-xs text-slate-500 mb-2"/>
                  </div>
              </div>
         </Section>
