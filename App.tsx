@@ -193,8 +193,12 @@ function App() {
                 const res = await fetch(dataUrl);
                 const blob = await res.blob();
                 if (blob && folder) {
+                    // Bersihkan Judul dan Kategori
                     const cleanTitle = (item.title || 'cover').replace(/[^a-z0-9]/gi, '_').substring(0, 50);
-                    folder.file(`${i + 1}_${cleanTitle}.png`, blob);
+                    const cleanCategory = (item.category || 'category').replace(/[^a-z0-9]/gi, '_').substring(0, 30);
+                    
+                    // Format: 1_Judul_Kategori.png
+                    folder.file(`${i + 1}_${cleanTitle}_${cleanCategory}.png`, blob); 
                     successCount++;
                 }
             } catch (rowError) { console.error(`Row ${i} fail:`, rowError); }
@@ -231,8 +235,14 @@ function App() {
             if (exportFormat === 'jpeg') dataUrl = await toJpeg(previewRef.current, options);
             else dataUrl = await toPng(previewRef.current, options);
             
-            const link = document.createElement('a');
-            link.download = `cover-${Date.now()}.${exportFormat}`;
+           const link = document.createElement('a');
+
+            // Bersihkan Judul dan Kategori dari karakter aneh agar aman untuk nama file
+            const cleanTitle = (config.title || 'untitled').replace(/[^a-z0-9]/gi, '_').substring(0, 50);
+            const cleanCategory = (config.category || 'category').replace(/[^a-z0-9]/gi, '_').substring(0, 30);
+
+            // Format: Judul_Kategori.png
+            link.download = `${cleanTitle}_${cleanCategory}.${exportFormat}`;
             link.href = dataUrl;
             link.click();
 
