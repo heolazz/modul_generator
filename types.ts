@@ -67,7 +67,7 @@ export interface CoverConfig {
   watermarkOpacity: number;
 }
 
-export const PRIMARY_BG_COLORS = ['#307FE2', '#71C5E8', '#101828', '#0F3D6E'];
+export const PRIMARY_BG_COLORS = ['#307FE2', '#71C5E8', '#097BF3', '#0857C3'];
 
 export const DEFAULT_CONFIG: CoverConfig = {
   layout: 'modern', 
