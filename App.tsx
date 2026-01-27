@@ -133,12 +133,11 @@ function App() {
           }
   
           const preset = CATEGORIES_DATA.find(c => c.name.toLowerCase() === String(category).toLowerCase());
-          const primaryColor = PRIMARY_BG_COLORS[0]; 
           const accentColor = preset ? preset.color : DEFAULT_CONFIG.accentColor;
           
           return { 
               title, category, level, speakerName, 
-              primaryColor, accentColor, 
+              accentColor, 
               categoryBgColor: accentColor, 
               categoryTextColor: getContrastColor(accentColor), 
               logoUrl, 

@@ -178,14 +178,22 @@ export const CATEGORIES_DATA = [
     { name: "Pariwisata", color: "#ffde59", group: "6. Industri Lainnya" },
 ];
   
+// types.ts
+
 export function getContrastColor(hexColor: string) {
     const hex = hexColor.replace('#', '');
     const r = parseInt(hex.substr(0, 2), 16);
     const g = parseInt(hex.substr(2, 2), 16);
     const b = parseInt(hex.substr(4, 2), 16);
     const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
-    if (['#c1ff72', '#facc15', '#e4bed2', '#ff751f', '#fefefe', '#ffde59'].includes(hexColor.toLowerCase())) {
+
+    if (['#c1ff72', '#facc15', '#e4bed2', '#fefefe', '#ffde59'].includes(hexColor.toLowerCase())) {
         return '#0F3D6E'; 
     }
+    
+    if (['#ff751f'].includes(hexColor.toLowerCase())) {
+        return '#ffffff';
+    }
+
     return (yiq >= 128) ? '#1f2937' : '#ffffff'; 
 }
